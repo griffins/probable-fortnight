@@ -1,5 +1,7 @@
 import {DateTime} from 'luxon'
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+import {createObjectCsvWriter} from 'csv-writer'
 
 interface Paginator {
     take: number
@@ -13,8 +15,8 @@ const hash = (plaintext: string): string => {
     const salt = bcrypt.genSaltSync(10);
     return bcrypt.hashSync(plaintext, salt);
 }
-const checkHash = (hash: string, plaintext: string): boolean => {
-    return bcrypt.compareSync(hash, plaintext);
+const checkHash = (plaintext: string, hash: string): boolean => {
+    return bcrypt.compareSync(plaintext, hash);
 }
 
 class InputError extends Error {
@@ -41,6 +43,34 @@ export const savings = async (parent: any, args: any, ctx: any) => {
         },
         ...paginator
     })
+}
+
+export const savingsReport = async (parent: any, args: any, ctx: any) => {
+    const {from, to} = args.dateRange
+    const savings = await ctx.prisma.saving.findMany({
+        where: {
+            userId: {equals: ctx.user.id},
+            date: {
+                lte: from,
+                gte: to
+            }
+        },
+        orderBy: {
+            id: 'asc'
+        }
+    })
+    const path = 'out.csv'
+    const csvWriter = createObjectCsvWriter({
+        path: `public/${path}`,
+        header: [
+            {id: 'id', title: 'id'},
+            {id: 'date', title: 'date'},
+            {id: 'amount', title: 'amount'},
+            {id: 'description', title: 'description'},
+        ]
+    });
+    await csvWriter.writeRecords(savings)
+    return {url: `${process.env.URL || 'http://localhost:4000'}/${path}`}
 }
 
 export const createSaving = async (parent: any, args: any, ctx: any) => {
@@ -82,4 +112,21 @@ export const createAccount = async (parent: any, args: any, ctx: any) => {
     } else {
         throw new InputError(`Account with email ${email} already exists`)
     }
+}
+
+export const auth = async (parent: any, args: any, ctx: any) => {
+    const {email, password} = args.user
+
+    const user = await ctx.prisma.user.findFirst({
+        where: {
+            email
+        }
+    })
+
+    if (user && checkHash(password, user.password)) {
+        user.token = jwt.sign({sub: user.id}, process.env.JWT_SECRET || "")
+        return user
+    }
+
+    throw new InputError(`Invalid email, password combination`)
 }

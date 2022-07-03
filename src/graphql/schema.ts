@@ -8,15 +8,22 @@ export default gql`
         date: String
         user: User
     }
+    
     type User {
         id: ID
         name: String
         email: String
+        token : String
+    }
+    
+    type File {
+        url : String
     }
 
     type Query {
         savings (pagination: Pagination): [Saving]
-        user: [User]
+        savingsReport (dateRange: DateRange): File
+        auth (user: UserDetails): User
     }
 
     input UserId {
@@ -31,6 +38,11 @@ export default gql`
     input Pagination {
         take: Int
         cursor: Int
+    } 
+    
+    input DateRange {
+        from: String
+        to: String
     }
 
     input UserDetails {
