@@ -1,0 +1,25 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Saving {
+  id        Int     @id @default(autoincrement())
+  date   String @index
+  amount Decimal
+  description String?
+  user    User   @relation(fields: [userId], references: [id])
+  userId  Int
+}
+
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String
+  password String
+  savings Saving[]
+}
