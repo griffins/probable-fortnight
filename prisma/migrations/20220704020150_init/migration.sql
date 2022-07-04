@@ -7,6 +7,7 @@ CREATE TABLE `Saving` (
     `userId` INTEGER NOT NULL,
 
     INDEX `Saving_date_idx`(`date`),
+    UNIQUE INDEX `Saving_userId_date_key`(`userId`, `date`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

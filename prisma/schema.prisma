@@ -15,6 +15,7 @@ model Saving {
   user    User   @relation(fields: [userId], references: [id])
   userId  Int
   @@index([date])
+  @@unique([userId,date])
 }
 
 model User {

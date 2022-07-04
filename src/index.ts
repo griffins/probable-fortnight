@@ -1,35 +1,25 @@
 import express from 'express'
-import http from 'http'
-import {ApolloServer} from 'apollo-server-express'
-import {ApolloServerPluginDrainHttpServer} from 'apollo-server-core';
-import {typeDefs, resolvers} from "./graphql"
-import {context} from './context'
 import dotenv from 'dotenv'
+import morgan from 'morgan'
+import bodyParser from "body-parser";
+import api from "./api";
+import {session} from "./api/middleware";
 
 async function startServer() {
     dotenv.config()
-    const app = express();
+    const app = express()
+    const port = process.env.PORT || 4000
+
+    app.use(morgan('common'))
+    app.use(bodyParser.json())
+    app.use(bodyParser.urlencoded())
     app.use(express.static('public'))
-    const server = http.createServer(app);
-    const apollo = new ApolloServer({
-        typeDefs,
-        resolvers,
-        context,
-        debug: false,
-        csrfPrevention: true,
-        cache: 'bounded',
-        plugins: [ApolloServerPluginDrainHttpServer({httpServer: server})],
-    });
+    app.use(session)
+    app.use(api)
 
-    await apollo.start();
-    // @ts-ignore
-    apollo.applyMiddleware({
-        app,
-        path: '/'
-    });
-
-    await new Promise<void>(resolve => server.listen({ port: 4000 }, resolve));
-    console.log(`🚀 Server ready at http://localhost:4000${apollo.graphqlPath}`);
+    app.listen(port, () => {
+        console.log(`🚀 Server ready at http://localhost:${port}`);
+    })
 }
 
 startServer()
