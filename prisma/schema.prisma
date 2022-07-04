@@ -9,7 +9,7 @@ generator client {
 
 model Saving {
   id        Int     @id @default(autoincrement())
-  date   String
+  date   DateTime
   amount Decimal
   description String?
   user    User   @relation(fields: [userId], references: [id])

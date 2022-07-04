@@ -1,10 +1,12 @@
 -- CreateTable
 CREATE TABLE `Saving` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `date` VARCHAR(191) NOT NULL,
+    `date` DATETIME(3) NOT NULL,
     `amount` DECIMAL(65, 30) NOT NULL,
+    `description` VARCHAR(191) NULL,
     `userId` INTEGER NOT NULL,
 
+    INDEX `Saving_date_idx`(`date`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

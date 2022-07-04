@@ -15,6 +15,7 @@ async function startServer() {
         typeDefs,
         resolvers,
         context,
+        debug: false,
         csrfPrevention: true,
         cache: 'bounded',
         plugins: [ApolloServerPluginDrainHttpServer({httpServer: server})],

@@ -53,7 +53,7 @@ export default gql`
     }
 
     type Mutation {
-        createSaving (user: UserId, details: SavingDetails): Saving
+        createSaving (details: SavingDetails): Saving
         createAccount (details: UserDetails): User
     }
 `;

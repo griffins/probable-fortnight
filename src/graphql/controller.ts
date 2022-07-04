@@ -1,39 +1,23 @@
 import {DateTime} from 'luxon'
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import {createObjectCsvWriter} from 'csv-writer'
-
-interface Paginator {
-    take: number
-    skip: number,
-    cursor?: {
-        id: number
-    }
-}
-
-const hash = (plaintext: string): string => {
-    const salt = bcrypt.genSaltSync(10);
-    return bcrypt.hashSync(plaintext, salt);
-}
-const checkHash = (plaintext: string, hash: string): boolean => {
-    return bcrypt.compareSync(plaintext, hash);
-}
-
-class InputError extends Error {
-
-}
+import fs from 'fs'
+import {InputError, checkHash, hash, Paginator, requireUser} from './utils'
 
 export const savings = async (parent: any, args: any, ctx: any) => {
+    requireUser(ctx)
+
     const paginator: Paginator = {
-        take: (args.pagination && args.pagination.take) || 3,
-        skip: 1
+        take: (args.pagination && args.pagination.take) || 15,
+        skip: 0
     }
     if (args.pagination && args.pagination.cursor) {
         paginator.cursor = {id: args.pagination.cursor}
+        paginator.skip = 1
     }
 
     // Our savings are sorted to facilitate pagination. Old first, new last
-    return await ctx.prisma.saving.findMany({
+    const savings = await ctx.prisma.saving.findMany({
         where: {
             userId: {equals: ctx.user.id}
         },
@@ -43,38 +27,53 @@ export const savings = async (parent: any, args: any, ctx: any) => {
         },
         ...paginator
     })
+    //change dates to the preferred format, or it will default to a local format
+    savings.map((s: any) => {
+        s.date = DateTime.fromJSDate(s.date).toISO()
+        return s
+    })
+    return savings
 }
 
 export const savingsReport = async (parent: any, args: any, ctx: any) => {
+    requireUser(ctx)
     const {from, to} = args.dateRange
-    const savings = await ctx.prisma.saving.findMany({
-        where: {
-            userId: {equals: ctx.user.id},
-            date: {
-                lte: from,
-                gte: to
+    const path = `saving_report_${ctx.user.id}_${from}_${to}.csv`
+    if (!fs.existsSync(`public/${path}`)) {
+        const savings = await ctx.prisma.saving.findMany({
+            where: {
+                userId: {equals: ctx.user.id},
+                date: {
+                    lte: new Date(to).toISOString(),
+                    gte: new Date(from).toISOString()
+                }
+            },
+            orderBy: {
+                id: 'asc'
             }
-        },
-        orderBy: {
-            id: 'asc'
-        }
-    })
-    const path = 'out.csv'
-    const csvWriter = createObjectCsvWriter({
-        path: `public/${path}`,
-        header: [
-            {id: 'id', title: 'id'},
-            {id: 'date', title: 'date'},
-            {id: 'amount', title: 'amount'},
-            {id: 'description', title: 'description'},
-        ]
-    });
-    await csvWriter.writeRecords(savings)
+        })
+        //change dates to the preferred format, or it will default to a local format
+        savings.map((s: any) => {
+            s.date = DateTime.fromJSDate(s.date).toISO()
+            return s
+        })
+        const csvWriter = createObjectCsvWriter({
+            path: `public/${path}`,
+            header: [
+                {id: 'id', title: 'id'},
+                {id: 'date', title: 'date'},
+                {id: 'amount', title: 'amount'},
+                {id: 'description', title: 'description'},
+            ]
+        });
+        await csvWriter.writeRecords(savings)
+    }
     return {url: `${process.env.URL || 'http://localhost:4000'}/${path}`}
 }
 
 export const createSaving = async (parent: any, args: any, ctx: any) => {
-    const date = DateTime.now().toFormat('yyyy-MM-dd')
+    requireUser(ctx)
+    const date = DateTime.now().startOf('day').toISO()
     const exists = await ctx.prisma.saving.findFirst({
         where: {
             date,
@@ -85,7 +84,9 @@ export const createSaving = async (parent: any, args: any, ctx: any) => {
         const {amount, description} = args.details
         if (amount > 0) {
             const data = {amount, description, date, userId: ctx.user.id}
-            return await ctx.prisma.saving.create({data, include: {user: true}})
+            const saving = await ctx.prisma.saving.create({data, include: {user: true}})
+            saving.date = DateTime.fromJSDate(saving.date).toISO()
+            return saving
         } else {
             throw new InputError("Saving amount cannot be less than 0")
         }
