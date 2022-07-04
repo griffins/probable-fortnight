@@ -1,4 +1,4 @@
-# Dinoco Saving API
+# Probable Fortnight Saving API
 
 How to run
 
@@ -9,4 +9,4 @@ How to run
 DATABASE_URL="mysql://root:@localhost/savings"
 JWT_SECRET="JWT_SECERREEEEEEEET"
 ```
-3. run `yarn init-db`
+3. Create database schema with `yarn init-db`
