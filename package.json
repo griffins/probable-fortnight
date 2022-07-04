@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "nodemon --exec 'ts-node' src/index.ts",
-    "init-db": "npx prisma migrate dev --name init"
+    "init-db": "npx prisma migrate dev"
   },
   "dependencies": {
     "@prisma/client": "^4.0.0",
