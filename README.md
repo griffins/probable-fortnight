@@ -3,7 +3,7 @@
 How to run
 
 1. Install yarn deps
-2. create .env file with `DATABASE_URL` and `JWT_SECRET` as below
+2. Create .env file with fields `DATABASE_URL` and `JWT_SECRET`, check example below
 
 ```
 DATABASE_URL="mysql://root:@localhost/savings"
